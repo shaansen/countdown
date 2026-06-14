@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Countdown</title>
+
+  <!-- PWA / iPhone Home Screen -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Our Wedding" />
+  <meta name="theme-color" content="#fdf2f8" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Gilda+Display&family=Cormorant+Garamond:ital,wght@0,700;1,300;1,400&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --plum:  #6b3a6b;
+      --rose:  #c47fa8;
+      --mauve: #c8a8c0;
+      --muted: #b8a4c0;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    body {
+      min-height: 100dvh;
+      background: #fdf2f8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ── Soft blobs ── */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .blob-1 { width: 65vw; height: 65vw; background: #f4d6e8; opacity: .5; top: -15vw; left: -15vw; animation: drift1 18s ease-in-out infinite alternate; }
+    .blob-2 { width: 55vw; height: 55vw; background: #ddd4f0; opacity: .5; bottom: -10vw; right: -10vw; animation: drift2 22s ease-in-out infinite alternate; }
+    .blob-3 { width: 40vw; height: 40vw; background: #f9e4ee; opacity: .4; top: 35%; left: 30%; animation: drift3 26s ease-in-out infinite alternate; }
+
+    @keyframes drift1 { to { transform: translate(8vw,  6vw) scale(1.1);  } }
+    @keyframes drift2 { to { transform: translate(-6vw,-8vw) scale(1.08); } }
+    @keyframes drift3 { to { transform: translate(5vw, -5vw) scale(0.92); } }
+
+    /* ── Stage ── */
+    .stage {
+      position: relative;
+      z-index: 3;
+      flex: 1;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    /* ── Persistent chevrons ── */
+    .chevron {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 4;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+    .chevron.top    { top: 1rem; }
+    .chevron.bottom { bottom: 1rem; }
+    .chevron.hidden { opacity: 0 !important; }
+
+    .chevron svg {
+      width: 18px; height: 10px;
+      stroke: var(--mauve);
+      stroke-width: 1.5;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      opacity: 0.45;
+      animation: chevronPulse 2.5s ease-in-out infinite;
+    }
+    .chevron.top svg    { animation-delay: 0s; }
+    .chevron.bottom svg { animation-delay: 0.4s; }
+
+    @keyframes chevronPulse {
+      0%, 100% { opacity: 0.2; transform: translateY(0); }
+      50%       { opacity: 0.6; transform: translateY(3px); }
+    }
+    .chevron.top svg { animation-name: chevronPulseUp; }
+    @keyframes chevronPulseUp {
+      0%, 100% { opacity: 0.2; transform: translateY(0); }
+      50%       { opacity: 0.6; transform: translateY(-3px); }
+    }
+
+    /* ── Unit cards ── */
+    .unit-card {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.9rem;
+      pointer-events: none;
+      padding: 0 1.5rem;
+    }
+
+    .unit-card.active { pointer-events: auto; }
+
+    /* label sits ABOVE the number */
+    .ornament {
+      display: block;
+      font-family: 'Cormorant Garamond', serif;
+      font-style: normal;
+      font-weight: 700;
+      font-size: clamp(1.5rem, 6vw, 2rem);
+      letter-spacing: 0.35em;
+      color: var(--plum);
+      text-transform: lowercase;
+      text-align: center;
+      order: -1; /* always above number */
+    }
+
+    .big-num {
+      font-family: 'Gilda Display', serif;
+      font-weight: 400;
+      line-height: 1;
+      display: block;
+      color: var(--plum);
+      text-align: center;
+      width: 100%;
+      /* font-size set dynamically by JS */
+    }
+
+    /* ── Slide transitions ── */
+    .exit-up    { animation: exitUp    0.55s cubic-bezier(0.4,0,0.2,1) both; }
+    .exit-down  { animation: exitDown  0.55s cubic-bezier(0.4,0,0.2,1) both; }
+    .enter-up   { animation: enterUp   0.55s cubic-bezier(0.4,0,0.2,1) both; }
+    .enter-down { animation: enterDown 0.55s cubic-bezier(0.4,0,0.2,1) both; }
+
+    @keyframes exitUp    { to   { opacity:0; transform: translateY(-60px) scale(0.92); filter: blur(6px); } }
+    @keyframes exitDown  { to   { opacity:0; transform: translateY( 60px) scale(0.92); filter: blur(6px); } }
+    @keyframes enterUp   { from { opacity:0; transform: translateY( 60px) scale(0.92); filter: blur(6px); } to { opacity:1; transform: none; filter: blur(0); } }
+    @keyframes enterDown { from { opacity:0; transform: translateY(-60px) scale(0.92); filter: blur(6px); } to { opacity:1; transform: none; filter: blur(0); } }
+
+    /* ── Bottom bar ── */
+    .bottom-bar {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-bottom: calc(env(safe-area-inset-bottom, 0.8rem) + 1.4rem);
+      padding-top: 0.4rem;
+      flex-shrink: 0;
+      animation: fadeUp 1s ease 0.3s both;
+    }
+
+    /* ── Dot nav with labels ── */
+    .dots {
+      display: flex;
+      gap: 0;
+      align-items: flex-end;
+    }
+
+    .dot-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      /* large hit target */
+      padding: 10px 10px 0;
+      cursor: pointer;
+    }
+
+    .dot-pip {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--mauve);
+      opacity: 0.3;
+      transition: all 0.35s ease;
+    }
+
+    .dot-item.active .dot-pip {
+      width: 18px;
+      border-radius: 3px;
+      background: var(--plum);
+      opacity: 1;
+    }
+
+    .dot-lbl {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 0.6rem;
+      letter-spacing: 0.05em;
+      color: var(--mauve);
+      opacity: 0.4;
+      transition: opacity 0.35s ease, color 0.35s ease;
+      text-transform: lowercase;
+    }
+
+    .dot-item.active .dot-lbl {
+      color: var(--plum);
+      opacity: 1;
+    }
+
+    /* ── Shared keyframes ── */
+    @keyframes fadeDown { from { opacity:0; transform: translateY(-14px); } to { opacity:1; transform: none; } }
+    @keyframes fadeUp   { from { opacity:0; transform: translateY( 14px); } to { opacity:1; transform: none; } }
+  </style>
+</head>
+<body>
+
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
+
+<div class="stage" id="stage">
+  <!-- Persistent chevrons -->
+  <div class="chevron top" id="chev-top">
+    <svg viewBox="0 0 18 10"><polyline points="1,9 9,1 17,9"/></svg>
+  </div>
+
+  <div class="unit-card active" data-index="0">
+    <span class="ornament">weeks</span>
+    <span class="big-num" id="val-0">--</span>
+  </div>
+  <div class="unit-card" data-index="1" style="opacity:0">
+    <span class="ornament">days</span>
+    <span class="big-num" id="val-1">--</span>
+  </div>
+  <div class="unit-card" data-index="2" style="opacity:0">
+    <span class="ornament">hours</span>
+    <span class="big-num" id="val-2">--</span>
+  </div>
+  <div class="unit-card" data-index="3" style="opacity:0">
+    <span class="ornament">minutes</span>
+    <span class="big-num" id="val-3">--</span>
+  </div>
+  <div class="unit-card" data-index="4" style="opacity:0">
+    <span class="ornament">seconds</span>
+    <span class="big-num" id="val-4">--</span>
+  </div>
+
+  <div class="chevron bottom" id="chev-bottom">
+    <svg viewBox="0 0 18 10"><polyline points="1,1 9,9 17,1"/></svg>
+  </div>
+</div>
+
+<div class="bottom-bar">
+  <div class="dots" id="dots">
+    <div class="dot-item active"><div class="dot-pip"></div><span class="dot-lbl">weeks</span></div>
+    <div class="dot-item"><div class="dot-pip"></div><span class="dot-lbl">days</span></div>
+    <div class="dot-item"><div class="dot-pip"></div><span class="dot-lbl">hours</span></div>
+    <div class="dot-item"><div class="dot-pip"></div><span class="dot-lbl">mins</span></div>
+    <div class="dot-item"><div class="dot-pip"></div><span class="dot-lbl">secs</span></div>
+  </div>
+</div>
+
+<script>
+  // ── Countdown ─────────────────────────────────────────────────────────────
+  const TARGET = new Date('2026-09-26T19:00:00Z'); // 3 PM EDT
+
+  const vals = [0,1,2,3,4].map(i => document.getElementById('val-' + i));
+
+  function fmt(n) { return Math.floor(n).toLocaleString('en-US'); }
+
+  function scaleFontToFit(el, str) {
+    const vw      = window.innerWidth;
+    const vh      = window.innerHeight;
+    const byWidth = (vw * 0.88) / (str.length * 0.58);
+    const byHeight = vh * 0.42;
+    el.style.fontSize = Math.max(Math.min(byWidth, byHeight), 40) + 'px';
+  }
+
+  function setVal(el, n) {
+    const s = fmt(n);
+    el.textContent = s;
+    scaleFontToFit(el, s);
+  }
+
+  function tick() {
+    const diff = TARGET - Date.now();
+    if (diff <= 0) { vals.forEach(v => v.textContent = '0'); return; }
+    setVal(vals[0], diff / (7 * 86400000));
+    setVal(vals[1], diff / 86400000);
+    setVal(vals[2], diff / 3600000);
+    setVal(vals[3], diff / 60000);
+    setVal(vals[4], diff / 1000);
+  }
+
+  tick();
+  setInterval(tick, 1000);
+  window.addEventListener('resize', tick);
+
+  // ── Navigation ────────────────────────────────────────────────────────────
+  const cards     = Array.from(document.querySelectorAll('.unit-card'));
+  const dotItems  = Array.from(document.querySelectorAll('.dot-item'));
+  const chevTop    = document.getElementById('chev-top');
+  const chevBottom = document.getElementById('chev-bottom');
+  const n          = cards.length;
+  let current      = 0;
+  let busy         = false;
+  let lastNav      = 0;
+  const COOLDOWN   = 750;
+
+  function updateChevrons() {
+    chevTop.classList.toggle('hidden', current === 0);
+    chevBottom.classList.toggle('hidden', current === n - 1);
+  }
+
+  function goTo(next, dir) {
+    const now = Date.now();
+    if (busy || next === current || now - lastNav < COOLDOWN) return;
+    lastNav = now;
+    busy = true;
+
+    const out = cards[current];
+    const inp = cards[next];
+
+    inp.style.opacity = '';
+    out.classList.add(dir > 0 ? 'exit-up'   : 'exit-down');
+    inp.classList.add(dir > 0 ? 'enter-up'  : 'enter-down');
+    inp.classList.add('active');
+
+    out.addEventListener('animationend', () => {
+      out.classList.remove('exit-up', 'exit-down', 'active');
+      out.style.opacity = '0';
+    }, { once: true });
+
+    inp.addEventListener('animationend', () => {
+      inp.classList.remove('enter-up', 'enter-down');
+      busy = false;
+    }, { once: true });
+
+    dotItems[current].classList.remove('active');
+    dotItems[next].classList.add('active');
+    current = next;
+    updateChevrons();
+  }
+
+  const fwd  = () => goTo((current + 1) % n,      1);
+  const back = () => goTo((current - 1 + n) % n, -1);
+
+  updateChevrons(); // hide top arrow on first load
+
+  // Touch — also track delta for directional peek
+  let ty = null;
+  document.addEventListener('touchstart', e => { ty = e.touches[0].clientY; }, { passive: true });
+  document.addEventListener('touchend',   e => {
+    if (ty === null) return;
+    const d = ty - e.changedTouches[0].clientY;
+    if (Math.abs(d) > 40) d > 0 ? fwd() : back();
+    ty = null;
+  }, { passive: true });
+
+  // Wheel
+  document.addEventListener('wheel', e => {
+    e.preventDefault();
+    if (Math.abs(e.deltaY) < 8) return;
+    e.deltaY > 0 ? fwd() : back();
+  }, { passive: false });
+
+  // Keys
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') fwd();
+    if (e.key === 'ArrowUp'   || e.key === 'ArrowLeft')  back();
+  });
+
+  // Dot taps
+  dotItems.forEach((d, i) => d.addEventListener('click', () => goTo(i, i > current ? 1 : -1)));
+</script>
+</body>
+</html>
