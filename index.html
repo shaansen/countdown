@@ -23,7 +23,6 @@
       --plum:  #6b3a6b;
       --rose:  #c47fa8;
       --mauve: #c8a8c0;
-      --muted: #b8a4c0;
     }
 
     html, body {
@@ -45,16 +44,10 @@
     }
 
     /* ── Soft blobs ── */
-    .blob {
-      position: fixed;
-      border-radius: 50%;
-      filter: blur(80px);
-      pointer-events: none;
-      z-index: 0;
-    }
-    .blob-1 { width: 65vw; height: 65vw; background: #f4d6e8; opacity: .5; top: -15vw; left: -15vw; animation: drift1 18s ease-in-out infinite alternate; }
-    .blob-2 { width: 55vw; height: 55vw; background: #ddd4f0; opacity: .5; bottom: -10vw; right: -10vw; animation: drift2 22s ease-in-out infinite alternate; }
-    .blob-3 { width: 40vw; height: 40vw; background: #f9e4ee; opacity: .4; top: 35%; left: 30%; animation: drift3 26s ease-in-out infinite alternate; }
+    .blob { position: fixed; border-radius: 50%; filter: blur(80px); pointer-events: none; z-index: 0; }
+    .blob-1 { width:65vw; height:65vw; background:#f4d6e8; opacity:.5; top:-15vw; left:-15vw; animation:drift1 18s ease-in-out infinite alternate; }
+    .blob-2 { width:55vw; height:55vw; background:#ddd4f0; opacity:.5; bottom:-10vw; right:-10vw; animation:drift2 22s ease-in-out infinite alternate; }
+    .blob-3 { width:40vw; height:40vw; background:#f9e4ee; opacity:.4; top:35%; left:30%; animation:drift3 26s ease-in-out infinite alternate; }
 
     @keyframes drift1 { to { transform: translate(8vw,  6vw) scale(1.1);  } }
     @keyframes drift2 { to { transform: translate(-6vw,-8vw) scale(1.08); } }
@@ -73,44 +66,28 @@
       min-height: 0;
     }
 
-    /* ── Persistent chevrons ── */
+    /* ── Chevrons ── */
     .chevron {
       position: absolute;
       left: 50%;
       transform: translateX(-50%);
       z-index: 4;
       pointer-events: none;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
     }
     .chevron.top    { top: 1rem; }
     .chevron.bottom { bottom: 1rem; }
-    .chevron.hidden { opacity: 0 !important; }
+    .chevron.hidden { opacity: 0 !important; pointer-events: none; }
 
     .chevron svg {
       width: 18px; height: 10px;
-      stroke: var(--mauve);
-      stroke-width: 1.5;
-      fill: none;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      opacity: 0.45;
-      animation: chevronPulse 2.5s ease-in-out infinite;
+      stroke: var(--mauve); stroke-width: 1.5;
+      fill: none; stroke-linecap: round; stroke-linejoin: round;
     }
-    .chevron.top svg    { animation-delay: 0s; }
-    .chevron.bottom svg { animation-delay: 0.4s; }
+    .chevron.bottom svg { animation: chevronDown 2.5s ease-in-out 0.4s infinite; }
+    .chevron.top    svg { animation: chevronUp   2.5s ease-in-out 0s   infinite; }
 
-    @keyframes chevronPulse {
-      0%, 100% { opacity: 0.2; transform: translateY(0); }
-      50%       { opacity: 0.6; transform: translateY(3px); }
-    }
-    .chevron.top svg { animation-name: chevronPulseUp; }
-    @keyframes chevronPulseUp {
-      0%, 100% { opacity: 0.2; transform: translateY(0); }
-      50%       { opacity: 0.6; transform: translateY(-3px); }
-    }
+    @keyframes chevronDown { 0%,100%{opacity:.2;transform:translateY(0)}  50%{opacity:.6;transform:translateY(3px)}  }
+    @keyframes chevronUp   { 0%,100%{opacity:.2;transform:translateY(0)}  50%{opacity:.6;transform:translateY(-3px)} }
 
     /* ── Unit cards ── */
     .unit-card {
@@ -123,11 +100,10 @@
       gap: 0.9rem;
       pointer-events: none;
       padding: 0 1.5rem;
+      opacity: 0;
     }
+    .unit-card.active { pointer-events: auto; opacity: 1; }
 
-    .unit-card.active { pointer-events: auto; }
-
-    /* label sits ABOVE the number */
     .ornament {
       display: block;
       font-family: 'Cormorant Garamond', serif;
@@ -138,7 +114,7 @@
       color: var(--plum);
       text-transform: lowercase;
       text-align: center;
-      order: -1; /* always above number */
+      order: -1;
     }
 
     .big-num {
@@ -149,8 +125,28 @@
       color: var(--plum);
       text-align: center;
       width: 100%;
-      /* font-size set dynamically by JS */
     }
+
+    /* ── Congrats screen ── */
+    #congrats {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 5;
+    }
+    #congrats.visible { display: flex; animation: fadeIn 1.2s ease both; }
+    #congrats .congrats-text {
+      font-family: 'Gilda Display', serif;
+      font-size: clamp(3rem, 18vw, 8rem);
+      color: var(--plum);
+      text-align: center;
+      line-height: 1.15;
+    }
+
+    @keyframes fadeIn { from { opacity:0; transform: scale(0.95); } to { opacity:1; transform: none; } }
 
     /* ── Slide transitions ── */
     .exit-up    { animation: exitUp    0.55s cubic-bezier(0.4,0,0.2,1) both; }
@@ -158,10 +154,10 @@
     .enter-up   { animation: enterUp   0.55s cubic-bezier(0.4,0,0.2,1) both; }
     .enter-down { animation: enterDown 0.55s cubic-bezier(0.4,0,0.2,1) both; }
 
-    @keyframes exitUp    { to   { opacity:0; transform: translateY(-60px) scale(0.92); filter: blur(6px); } }
-    @keyframes exitDown  { to   { opacity:0; transform: translateY( 60px) scale(0.92); filter: blur(6px); } }
-    @keyframes enterUp   { from { opacity:0; transform: translateY( 60px) scale(0.92); filter: blur(6px); } to { opacity:1; transform: none; filter: blur(0); } }
-    @keyframes enterDown { from { opacity:0; transform: translateY(-60px) scale(0.92); filter: blur(6px); } to { opacity:1; transform: none; filter: blur(0); } }
+    @keyframes exitUp    { to   { opacity:0; transform:translateY(-60px) scale(0.92); filter:blur(6px); } }
+    @keyframes exitDown  { to   { opacity:0; transform:translateY( 60px) scale(0.92); filter:blur(6px); } }
+    @keyframes enterUp   { from { opacity:0; transform:translateY( 60px) scale(0.92); filter:blur(6px); } to { opacity:1; transform:none; filter:blur(0); } }
+    @keyframes enterDown { from { opacity:0; transform:translateY(-60px) scale(0.92); filter:blur(6px); } to { opacity:1; transform:none; filter:blur(0); } }
 
     /* ── Bottom bar ── */
     .bottom-bar {
@@ -176,19 +172,13 @@
       animation: fadeUp 1s ease 0.3s both;
     }
 
-    /* ── Dot nav with labels ── */
-    .dots {
-      display: flex;
-      gap: 0;
-      align-items: flex-end;
-    }
+    .dots { display: flex; gap: 0; align-items: flex-end; }
 
     .dot-item {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 5px;
-      /* large hit target */
       padding: 10px 10px 0;
       cursor: pointer;
     }
@@ -200,13 +190,7 @@
       opacity: 0.3;
       transition: all 0.35s ease;
     }
-
-    .dot-item.active .dot-pip {
-      width: 18px;
-      border-radius: 3px;
-      background: var(--plum);
-      opacity: 1;
-    }
+    .dot-item.active .dot-pip { width:18px; border-radius:3px; background:var(--plum); opacity:1; }
 
     .dot-lbl {
       font-family: 'Cormorant Garamond', serif;
@@ -218,15 +202,10 @@
       transition: opacity 0.35s ease, color 0.35s ease;
       text-transform: lowercase;
     }
-
-    .dot-item.active .dot-lbl {
-      color: var(--plum);
-      opacity: 1;
-    }
+    .dot-item.active .dot-lbl { color: var(--plum); opacity: 1; }
 
     /* ── Shared keyframes ── */
-    @keyframes fadeDown { from { opacity:0; transform: translateY(-14px); } to { opacity:1; transform: none; } }
-    @keyframes fadeUp   { from { opacity:0; transform: translateY( 14px); } to { opacity:1; transform: none; } }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:none; } }
   </style>
 </head>
 <body>
@@ -235,161 +214,197 @@
 <div class="blob blob-2"></div>
 <div class="blob blob-3"></div>
 
-
 <div class="stage" id="stage">
-  <!-- Persistent chevrons -->
-  <div class="chevron top" id="chev-top">
+  <div class="chevron top hidden" id="chev-top">
     <svg viewBox="0 0 18 10"><polyline points="1,9 9,1 17,9"/></svg>
   </div>
 
-  <div class="unit-card active" data-index="0">
-    <span class="ornament">weeks</span>
-    <span class="big-num" id="val-0">--</span>
-  </div>
-  <div class="unit-card" data-index="1" style="opacity:0">
-    <span class="ornament">days</span>
-    <span class="big-num" id="val-1">--</span>
-  </div>
-  <div class="unit-card" data-index="2" style="opacity:0">
-    <span class="ornament">hours</span>
-    <span class="big-num" id="val-2">--</span>
-  </div>
-  <div class="unit-card" data-index="3" style="opacity:0">
-    <span class="ornament">minutes</span>
-    <span class="big-num" id="val-3">--</span>
-  </div>
-  <div class="unit-card" data-index="4" style="opacity:0">
-    <span class="ornament">seconds</span>
-    <span class="big-num" id="val-4">--</span>
+  <!-- All 5 unit cards; JS shows only the relevant ones -->
+  <div class="unit-card" id="card-0"><span class="ornament">weeks</span><span class="big-num" id="val-0">--</span></div>
+  <div class="unit-card" id="card-1"><span class="ornament">days</span><span class="big-num" id="val-1">--</span></div>
+  <div class="unit-card" id="card-2"><span class="ornament">hours</span><span class="big-num" id="val-2">--</span></div>
+  <div class="unit-card" id="card-3"><span class="ornament">minutes</span><span class="big-num" id="val-3">--</span></div>
+  <div class="unit-card" id="card-4"><span class="ornament">seconds</span><span class="big-num" id="val-4">--</span></div>
+
+  <!-- Congrats overlay -->
+  <div id="congrats">
+    <span class="congrats-text">Congrats</span>
   </div>
 
-  <div class="chevron bottom" id="chev-bottom">
+  <div class="chevron bottom hidden" id="chev-bottom">
     <svg viewBox="0 0 18 10"><polyline points="1,1 9,9 17,1"/></svg>
   </div>
 </div>
 
 <div class="bottom-bar">
-  <div class="dots" id="dots">
-    <div class="dot-item active"><div class="dot-pip"></div><span class="dot-lbl">weeks</span></div>
-    <div class="dot-item"><div class="dot-pip"></div><span class="dot-lbl">days</span></div>
-    <div class="dot-item"><div class="dot-pip"></div><span class="dot-lbl">hours</span></div>
-    <div class="dot-item"><div class="dot-pip"></div><span class="dot-lbl">mins</span></div>
-    <div class="dot-item"><div class="dot-pip"></div><span class="dot-lbl">secs</span></div>
-  </div>
+  <div class="dots" id="dots"></div>
 </div>
 
 <script>
-  // ── Countdown ─────────────────────────────────────────────────────────────
   const TARGET = new Date('2026-09-26T19:00:00Z'); // 3 PM EDT
 
-  const vals = [0,1,2,3,4].map(i => document.getElementById('val-' + i));
+  const UNITS = [
+    { key: 'weeks',   shortKey: 'weeks',   divisor: 7 * 86400000 },
+    { key: 'days',    shortKey: 'days',    divisor: 86400000 },
+    { key: 'hours',   shortKey: 'hours',   divisor: 3600000 },
+    { key: 'minutes', shortKey: 'mins',    divisor: 60000 },
+    { key: 'seconds', shortKey: 'secs',    divisor: 1000 },
+  ];
 
+  const cards      = UNITS.map((_, i) => document.getElementById('card-' + i));
+  const valEls     = UNITS.map((_, i) => document.getElementById('val-' + i));
+  const dotsEl     = document.getElementById('dots');
+  const chevTop    = document.getElementById('chev-top');
+  const chevBottom = document.getElementById('chev-bottom');
+  const congratsEl = document.getElementById('congrats');
+
+  // State
+  let visible  = [];   // unit indices currently in the list
+  let pos      = 0;    // index within visible[]
+  let busy     = false;
+  let lastNav  = 0;
+  let done     = false;
+  const COOLDOWN = 750;
+
+  // ── Formatting ─────────────────────────────────────────────────────────────
   function fmt(n) { return Math.floor(n).toLocaleString('en-US'); }
 
   function scaleFontToFit(el, str) {
-    const vw      = window.innerWidth;
-    const vh      = window.innerHeight;
-    const byWidth = (vw * 0.88) / (str.length * 0.58);
-    const byHeight = vh * 0.42;
-    el.style.fontSize = Math.max(Math.min(byWidth, byHeight), 40) + 'px';
+    const byW = (window.innerWidth  * 0.88) / (str.length * 0.58);
+    const byH = window.innerHeight * 0.42;
+    el.style.fontSize = Math.max(Math.min(byW, byH), 40) + 'px';
   }
 
-  function setVal(el, n) {
-    const s = fmt(n);
-    el.textContent = s;
-    scaleFontToFit(el, s);
+  // ── Dots rebuild ───────────────────────────────────────────────────────────
+  function rebuildDots() {
+    dotsEl.innerHTML = '';
+    visible.forEach((unitIdx, dotPos) => {
+      const item = document.createElement('div');
+      item.className = 'dot-item' + (dotPos === pos ? ' active' : '');
+      item.innerHTML = `<div class="dot-pip"></div><span class="dot-lbl">${UNITS[unitIdx].shortKey}</span>`;
+      item.addEventListener('click', () => navigateTo(dotPos, dotPos > pos ? 1 : -1));
+      dotsEl.appendChild(item);
+    });
   }
 
+  function updateActiveDot() {
+    Array.from(dotsEl.querySelectorAll('.dot-item')).forEach((el, i) => {
+      el.classList.toggle('active', i === pos);
+    });
+  }
+
+  function updateChevrons() {
+    chevTop.classList.toggle('hidden', pos === 0);
+    chevBottom.classList.toggle('hidden', pos === visible.length - 1);
+  }
+
+  // ── Navigation ─────────────────────────────────────────────────────────────
+  function navigateTo(newPos, dir) {
+    if (done || busy || newPos === pos || newPos < 0 || newPos >= visible.length) return;
+    const now = Date.now();
+    if (now - lastNav < COOLDOWN) return;
+    lastNav = now;
+    busy = true;
+
+    const outCard = cards[visible[pos]];
+    pos = newPos;
+    const inCard = cards[visible[pos]];
+
+    outCard.classList.add(dir > 0 ? 'exit-up'   : 'exit-down');
+    inCard.classList.add( dir > 0 ? 'enter-up'  : 'enter-down');
+    inCard.classList.add('active');
+
+    outCard.addEventListener('animationend', () => {
+      outCard.classList.remove('exit-up', 'exit-down', 'active');
+    }, { once: true });
+
+    inCard.addEventListener('animationend', () => {
+      inCard.classList.remove('enter-up', 'enter-down');
+      busy = false;
+    }, { once: true });
+
+    updateActiveDot();
+    updateChevrons();
+  }
+
+  const fwd  = () => navigateTo(pos + 1,  1);
+  const back = () => navigateTo(pos - 1, -1);
+
+  // ── Visible-units sync ─────────────────────────────────────────────────────
+  function syncVisible(diff) {
+    const newVisible = UNITS.map((u, i) => i).filter(i => Math.floor(diff / UNITS[i].divisor) >= 1);
+
+    if (JSON.stringify(newVisible) === JSON.stringify(visible)) return; // no change
+
+    // Remember which unit was active so we can try to stay on it
+    const activeUnit = visible[pos] ?? newVisible[0];
+
+    // Hide all cards
+    cards.forEach(c => c.classList.remove('active'));
+
+    visible = newVisible;
+
+    // Stay on same unit if still available, else fall back to first
+    let newPos = visible.indexOf(activeUnit);
+    if (newPos === -1) newPos = 0;
+    pos = newPos;
+
+    if (visible.length > 0) cards[visible[pos]].classList.add('active');
+
+    rebuildDots();
+    updateChevrons();
+  }
+
+  // ── Tick ───────────────────────────────────────────────────────────────────
   function tick() {
     const diff = TARGET - Date.now();
-    if (diff <= 0) { vals.forEach(v => v.textContent = '0'); return; }
-    setVal(vals[0], diff / (7 * 86400000));
-    setVal(vals[1], diff / 86400000);
-    setVal(vals[2], diff / 3600000);
-    setVal(vals[3], diff / 60000);
-    setVal(vals[4], diff / 1000);
+
+    if (diff <= 0) {
+      if (!done) {
+        done = true;
+        cards.forEach(c => c.classList.remove('active'));
+        dotsEl.innerHTML = '';
+        chevTop.classList.add('hidden');
+        chevBottom.classList.add('hidden');
+        congratsEl.classList.add('visible');
+      }
+      return;
+    }
+
+    // Update all values
+    UNITS.forEach((u, i) => {
+      const s = fmt(diff / u.divisor);
+      valEls[i].textContent = s;
+      scaleFontToFit(valEls[i], s);
+    });
+
+    syncVisible(diff);
   }
 
   tick();
   setInterval(tick, 1000);
-  window.addEventListener('resize', tick);
+  window.addEventListener('resize', () => { if (!done) tick(); });
 
-  // ── Navigation ────────────────────────────────────────────────────────────
-  const cards     = Array.from(document.querySelectorAll('.unit-card'));
-  const dotItems  = Array.from(document.querySelectorAll('.dot-item'));
-  const chevTop    = document.getElementById('chev-top');
-  const chevBottom = document.getElementById('chev-bottom');
-  const n          = cards.length;
-  let current      = 0;
-  let busy         = false;
-  let lastNav      = 0;
-  const COOLDOWN   = 750;
-
-  function updateChevrons() {
-    chevTop.classList.toggle('hidden', current === 0);
-    chevBottom.classList.toggle('hidden', current === n - 1);
-  }
-
-  function goTo(next, dir) {
-    const now = Date.now();
-    if (busy || next === current || now - lastNav < COOLDOWN) return;
-    lastNav = now;
-    busy = true;
-
-    const out = cards[current];
-    const inp = cards[next];
-
-    inp.style.opacity = '';
-    out.classList.add(dir > 0 ? 'exit-up'   : 'exit-down');
-    inp.classList.add(dir > 0 ? 'enter-up'  : 'enter-down');
-    inp.classList.add('active');
-
-    out.addEventListener('animationend', () => {
-      out.classList.remove('exit-up', 'exit-down', 'active');
-      out.style.opacity = '0';
-    }, { once: true });
-
-    inp.addEventListener('animationend', () => {
-      inp.classList.remove('enter-up', 'enter-down');
-      busy = false;
-    }, { once: true });
-
-    dotItems[current].classList.remove('active');
-    dotItems[next].classList.add('active');
-    current = next;
-    updateChevrons();
-  }
-
-  const fwd  = () => goTo((current + 1) % n,      1);
-  const back = () => goTo((current - 1 + n) % n, -1);
-
-  updateChevrons(); // hide top arrow on first load
-
-  // Touch — also track delta for directional peek
+  // ── Input handlers ─────────────────────────────────────────────────────────
   let ty = null;
   document.addEventListener('touchstart', e => { ty = e.touches[0].clientY; }, { passive: true });
-  document.addEventListener('touchend',   e => {
+  document.addEventListener('touchend', e => {
     if (ty === null) return;
     const d = ty - e.changedTouches[0].clientY;
     if (Math.abs(d) > 40) d > 0 ? fwd() : back();
     ty = null;
   }, { passive: true });
 
-  // Wheel
   document.addEventListener('wheel', e => {
     e.preventDefault();
     if (Math.abs(e.deltaY) < 8) return;
     e.deltaY > 0 ? fwd() : back();
   }, { passive: false });
 
-  // Keys
   document.addEventListener('keydown', e => {
     if (e.key === 'ArrowDown' || e.key === 'ArrowRight') fwd();
     if (e.key === 'ArrowUp'   || e.key === 'ArrowLeft')  back();
   });
-
-  // Dot taps
-  dotItems.forEach((d, i) => d.addEventListener('click', () => goTo(i, i > current ? 1 : -1)));
 </script>
 </body>
 </html>
