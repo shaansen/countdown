@@ -128,6 +128,19 @@
       width: 100%;
     }
 
+    .sub-num {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: clamp(1.05rem, 5vw, 1.6rem);
+      letter-spacing: 0.08em;
+      color: var(--rose);
+      text-align: center;
+      width: 100%;
+      margin-top: -0.35rem;
+    }
+    .sub-num.empty { visibility: hidden; }
+
     /* ── Congrats screen ── */
     #congrats {
       position: absolute;
@@ -221,11 +234,11 @@
   </div>
 
   <!-- All 5 unit cards; JS shows only the relevant ones -->
-  <div class="unit-card" id="card-0"><span class="ornament">weeks</span><span class="big-num" id="val-0">--</span></div>
-  <div class="unit-card" id="card-1"><span class="ornament">days</span><span class="big-num" id="val-1">--</span></div>
-  <div class="unit-card" id="card-2"><span class="ornament">hours</span><span class="big-num" id="val-2">--</span></div>
-  <div class="unit-card" id="card-3"><span class="ornament">minutes</span><span class="big-num" id="val-3">--</span></div>
-  <div class="unit-card" id="card-4"><span class="ornament">seconds</span><span class="big-num" id="val-4">--</span></div>
+  <div class="unit-card" id="card-0"><span class="ornament">weeks</span><span class="big-num" id="val-0">--</span><span class="sub-num empty" id="sub-0"></span></div>
+  <div class="unit-card" id="card-1"><span class="ornament">days</span><span class="big-num" id="val-1">--</span><span class="sub-num empty" id="sub-1"></span></div>
+  <div class="unit-card" id="card-2"><span class="ornament">hours</span><span class="big-num" id="val-2">--</span><span class="sub-num empty" id="sub-2"></span></div>
+  <div class="unit-card" id="card-3"><span class="ornament">minutes</span><span class="big-num" id="val-3">--</span><span class="sub-num empty" id="sub-3"></span></div>
+  <div class="unit-card" id="card-4"><span class="ornament">seconds</span><span class="big-num" id="val-4">--</span><span class="sub-num empty" id="sub-4"></span></div>
 
   <!-- Congrats overlay -->
   <div id="congrats">
@@ -245,15 +258,16 @@
   const TARGET = new Date('2026-09-26T19:00:00Z'); // 3 PM EDT
 
   const UNITS = [
-    { key: 'weeks',   shortKey: 'weeks',   divisor: 7 * 86400000 },
-    { key: 'days',    shortKey: 'days',    divisor: 86400000 },
-    { key: 'hours',   shortKey: 'hours',   divisor: 3600000 },
-    { key: 'minutes', shortKey: 'mins',    divisor: 60000 },
-    { key: 'seconds', shortKey: 'secs',    divisor: 1000 },
+    { key: 'weeks',   shortKey: 'weeks',   one: 'week',   divisor: 7 * 86400000 },
+    { key: 'days',    shortKey: 'days',    one: 'day',    divisor: 86400000 },
+    { key: 'hours',   shortKey: 'hours',   one: 'hour',   divisor: 3600000 },
+    { key: 'minutes', shortKey: 'mins',    one: 'minute', divisor: 60000 },
+    { key: 'seconds', shortKey: 'secs',    one: 'second', divisor: 1000 },
   ];
 
   const cards      = UNITS.map((_, i) => document.getElementById('card-' + i));
   const valEls     = UNITS.map((_, i) => document.getElementById('val-' + i));
+  const subEls     = UNITS.map((_, i) => document.getElementById('sub-' + i));
   const dotsEl     = document.getElementById('dots');
   const chevTop    = document.getElementById('chev-top');
   const chevBottom = document.getElementById('chev-bottom');
@@ -272,7 +286,7 @@
 
   function scaleFontToFit(el, str) {
     const byW = (window.innerWidth  * 0.88) / (str.length * 0.58);
-    const byH = window.innerHeight * 0.42;
+    const byH = window.innerHeight * 0.38;
     el.style.fontSize = Math.max(Math.min(byW, byH), 40) + 'px';
   }
 
@@ -372,11 +386,16 @@
       return;
     }
 
-    // Update all values
+    // Update all values, plus the remainder expressed in the next-smaller unit
     UNITS.forEach((u, i) => {
       const s = fmt(diff / u.divisor);
       valEls[i].textContent = s;
       scaleFontToFit(valEls[i], s);
+
+      const next = UNITS[i + 1];
+      const rem  = next ? Math.floor((diff % u.divisor) / next.divisor) : 0;
+      subEls[i].textContent = rem > 0 ? `${fmt(rem)} ${rem === 1 ? next.one : next.key}` : '';
+      subEls[i].classList.toggle('empty', rem === 0);
     });
 
     syncVisible(diff);
