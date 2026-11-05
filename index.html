@@ -141,26 +141,23 @@
     }
     .sub-num.empty { visibility: hidden; }
 
-    /* ── Congrats screen ── */
-    #congrats {
-      position: absolute;
-      inset: 0;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 5;
-    }
-    #congrats.visible { display: flex; animation: fadeIn 1.2s ease both; }
-    #congrats .congrats-text {
-      font-family: 'Gilda Display', serif;
-      font-size: clamp(3rem, 18vw, 8rem);
-      color: var(--plum);
+    /* ── Caption (shown once the date has passed) ── */
+    .caption {
+      position: relative;
+      z-index: 3;
+      flex-shrink: 0;
+      padding-top: calc(env(safe-area-inset-top, 0px) + 1.6rem);
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: clamp(1.1rem, 5vw, 1.5rem);
+      letter-spacing: 0.12em;
+      color: var(--rose);
       text-align: center;
-      line-height: 1.15;
+      text-transform: lowercase;
+      animation: fadeUp 1s ease 0.3s both;
     }
-
-    @keyframes fadeIn { from { opacity:0; transform: scale(0.95); } to { opacity:1; transform: none; } }
+    .caption.hidden { visibility: hidden; }
 
     /* ── Slide transitions ── */
     .exit-up    { animation: exitUp    0.55s cubic-bezier(0.4,0,0.2,1) both; }
@@ -228,6 +225,8 @@
 <div class="blob blob-2"></div>
 <div class="blob blob-3"></div>
 
+<div class="caption hidden" id="caption">married for</div>
+
 <div class="stage" id="stage">
   <div class="chevron top hidden" id="chev-top">
     <svg viewBox="0 0 18 10"><polyline points="1,9 9,1 17,9"/></svg>
@@ -239,11 +238,6 @@
   <div class="unit-card" id="card-2"><span class="ornament">hours</span><span class="big-num" id="val-2">--</span><span class="sub-num empty" id="sub-2"></span></div>
   <div class="unit-card" id="card-3"><span class="ornament">minutes</span><span class="big-num" id="val-3">--</span><span class="sub-num empty" id="sub-3"></span></div>
   <div class="unit-card" id="card-4"><span class="ornament">seconds</span><span class="big-num" id="val-4">--</span><span class="sub-num empty" id="sub-4"></span></div>
-
-  <!-- Congrats overlay -->
-  <div id="congrats">
-    <span class="congrats-text">Congrats</span>
-  </div>
 
   <div class="chevron bottom hidden" id="chev-bottom">
     <svg viewBox="0 0 18 10"><polyline points="1,1 9,9 17,1"/></svg>
@@ -271,14 +265,13 @@
   const dotsEl     = document.getElementById('dots');
   const chevTop    = document.getElementById('chev-top');
   const chevBottom = document.getElementById('chev-bottom');
-  const congratsEl = document.getElementById('congrats');
+  const captionEl  = document.getElementById('caption');
 
   // State
   let visible  = [];   // unit indices currently in the list
   let pos      = 0;    // index within visible[]
   let busy     = false;
   let lastNav  = 0;
-  let done     = false;
   const COOLDOWN = 750;
 
   // ── Formatting ─────────────────────────────────────────────────────────────
@@ -315,7 +308,7 @@
 
   // ── Navigation ─────────────────────────────────────────────────────────────
   function navigateTo(newPos, dir) {
-    if (done || busy || newPos === pos || newPos < 0 || newPos >= visible.length) return;
+    if (busy || newPos === pos || newPos < 0 || newPos >= visible.length) return;
     const now = Date.now();
     if (now - lastNav < COOLDOWN) return;
     lastNav = now;
@@ -372,19 +365,10 @@
 
   // ── Tick ───────────────────────────────────────────────────────────────────
   function tick() {
-    const diff = TARGET - Date.now();
-
-    if (diff <= 0) {
-      if (!done) {
-        done = true;
-        cards.forEach(c => c.classList.remove('active'));
-        dotsEl.innerHTML = '';
-        chevTop.classList.add('hidden');
-        chevBottom.classList.add('hidden');
-        congratsEl.classList.add('visible');
-      }
-      return;
-    }
+    // Before the date: time remaining. After it: time elapsed, counting up.
+    const signed = TARGET - Date.now();
+    const diff   = Math.abs(signed);
+    captionEl.classList.toggle('hidden', signed > 0);
 
     // Update all values, plus the remainder expressed in the next-smaller unit
     UNITS.forEach((u, i) => {
@@ -403,7 +387,7 @@
 
   tick();
   setInterval(tick, 1000);
-  window.addEventListener('resize', () => { if (!done) tick(); });
+  window.addEventListener('resize', tick);
 
   // ── Input handlers ─────────────────────────────────────────────────────────
   let ty = null;
